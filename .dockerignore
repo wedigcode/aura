@@ -1,0 +1,12 @@
+.env
+.env.example
+node_modules/
+chroma_data/
+documents/
+.aura/
+.DS_Store
+.git/
+.gitignore
+*.md
+ask.js
+docker-compose.yml
