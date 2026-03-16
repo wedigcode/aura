@@ -17,7 +17,7 @@ const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
 const CHROMA_URL = process.env.CHROMA_URL || 'http://localhost:8000';
 const COLLECTION_NAME = 'aura_docs';
 const EMBED_MODEL = process.env.EMBED_MODEL || 'nomic-embed-text:latest';
-const DOCUMENTS_DIR = path.resolve('./documents');
+const DOCUMENTS_DIR = process.env.DOCKER_ENV ? path.resolve('./documents') : (process.env.AURA_DIR ? path.resolve(process.env.AURA_DIR) : path.resolve('./documents'));
 
 const chroma = new ChromaClient({ path: CHROMA_URL });
 const ollama = new Ollama({ host: OLLAMA_HOST });

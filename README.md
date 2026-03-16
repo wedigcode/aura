@@ -130,14 +130,21 @@ Open your `claude_desktop_config.json` (usually located at `~/Library/Applicatio
         "aura",
         "node",
         "mcp.js"
-      ]
+      ],
+      "env": {
+        "AURA_DIR": "/absolute/path/to/documents",
+        "OLLAMA_HOST": "http://your_ollama_ip:11434",
+        "CHROMA_URL": "http://chromadb:8000",
+        "LLM_MODEL": "qwen-coder-next:latest",
+        "EMBED_MODEL": "qwen3-embedding:8b"
+      }
     }
   }
 }
 ```
 
 #### Option B: Local Node.js
-If you have Node.js installed locally and prefer to run the script from your host machine, you can point your AI client directly to the absolute path of `mcp.js`:
+If you have Node.js installed locally and prefer to run the script from your host machine, you can point your AI client directly to the absolute path of `mcp.js`. Make sure to provide the necessary `env` variables so the script knows where to locate your ChromaDB instance and files:
 
 ```json
 {
@@ -146,7 +153,14 @@ If you have Node.js installed locally and prefer to run the script from your hos
       "command": "node",
       "args": [
         "/absolute/path/to/aura/mcp.js"
-      ]
+      ],
+      "env": {
+        "AURA_DIR": "/absolute/path/to/documents",
+        "OLLAMA_HOST": "http://your_ollama_ip:11434",
+        "CHROMA_URL": "http://localhost:8000",
+        "LLM_MODEL": "qwen-coder-next:latest",
+        "EMBED_MODEL": "qwen3-embedding:8b"
+      }
     }
   }
 }
