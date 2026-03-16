@@ -64,6 +64,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                             type: "string",
                             description: "The search query, question, or topic to look up in the local database.",
                         },
+                        project: {
+                            type: "string",
+                            description: "Optional project folder name to restrict the search to a specific directory branch/project (e.g., 'antigravity').",
+                        },
                         results_count: {
                             type: "number",
                             description: "The maximum number of semantic chunks to return. Defaults to 5. Keep this low if token limits are a concern.",
@@ -81,7 +85,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {
                         filename: {
                             type: "string",
-                            description: "The name of the file to read (e.g., 'sample.md', 'book.pdf').",
+                            description: "The path of the file to read, relative to the Aura root (e.g., 'sample.md', 'antigravity/book.pdf').",
                         }
                     },
                     required: ["filename"],
@@ -95,7 +99,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {
                         filename: {
                             type: "string",
-                            description: "The name of the file to create or update (e.g., 'notes.md').",
+                            description: "The path of the file to create or update, relative to the Aura root (e.g., 'notes.md', 'myproject/spec.txt').",
                         },
                         content: {
                             type: "string",
@@ -113,7 +117,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {
                         filename: {
                             type: "string",
-                            description: "The name of the file to delete (e.g., 'outdated.txt').",
+                            description: "The path of the file to delete (e.g., 'outdated.txt', 'project/config.md').",
                         }
                     },
                     required: ["filename"],
@@ -144,10 +148,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 embeddingFunction: ollamaEmbedder
             });
             
-            const results = await collection.query({
+            const queryOptions = {
                 queryTexts: [query],
                 nResults: nResults
-            });
+            };
+
+            if (args.project && typeof args.project === "string") {
+                queryOptions.where = { "project": args.project };
+            }
+
+            const results = await collection.query(queryOptions);
 
             const documents = results.documents[0];
             const metadatas = results.metadatas[0];
@@ -181,8 +191,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     if (request.params.name === "read_aura_file") {
         if (!args || typeof args.filename !== "string") throw new Error("Invalid arguments: filename required");
-        
-        const filePath = path.join(DOCUMENTS_DIR, path.basename(args.filename));
+        const safePath = path.normalize(args.filename).replace(/^(\.\.(\/|\\|$))+/, '');
+        const filePath = path.join(DOCUMENTS_DIR, safePath);
         try {
             const ext = path.extname(filePath).toLowerCase();
             let content = '';
@@ -204,8 +214,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             throw new Error("Invalid arguments: filename and content required");
         }
         
-        const filePath = path.join(DOCUMENTS_DIR, path.basename(args.filename));
+        const safePath = path.normalize(args.filename).replace(/^(\.\.(\/|\\|$))+/, '');
+        const filePath = path.join(DOCUMENTS_DIR, safePath);
         try {
+            await fs.ensureDir(path.dirname(filePath));
             await fs.writeFile(filePath, args.content, 'utf-8');
             return { content: [{ type: "text", text: `File successfully saved to ${filePath}. The Aura watcher will now index it.` }] };
         } catch (error) {
@@ -215,8 +227,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     if (request.params.name === "delete_aura_file") {
         if (!args || typeof args.filename !== "string") throw new Error("Invalid arguments: filename required");
-        
-        const filePath = path.join(DOCUMENTS_DIR, path.basename(args.filename));
+        const safePath = path.normalize(args.filename).replace(/^(\.\.(\/|\\|$))+/, '');
+        const filePath = path.join(DOCUMENTS_DIR, safePath);
         try {
             await fs.remove(filePath);
             return { content: [{ type: "text", text: `File successfully deleted from ${filePath}. The Aura watcher will remove its vectors.` }] };

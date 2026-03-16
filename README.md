@@ -156,9 +156,9 @@ Once you restart Claude Desktop, it will have access to context-aware local memo
 
 ### Available MCP Tools
 When connected via MCP, your AI assistant will have access to four core tools:
-- `query_aura(query)`: Searches ChromaDB for semantic context within your documents.
-- `read_aura_file(filename)`: Reads a full document from the local directory.
-- `write_aura_file(filename, content)`: Creates or updates a document (automatically triggering the sync engine).
+- `query_aura(query, [project])`: Searches ChromaDB for semantic context within your documents. You can optionally pass a `project` name to restrict the search to a specific subdirectory (e.g., `project: "antigravity"`).
+- `read_aura_file(filename)`: Reads a full document from the local directory. (e.g., `antigravity/spec.md`).
+- `write_aura_file(filename, content)`: Creates or updates a document natively supporting sub-directories (automatically triggering the sync engine).
 - `delete_aura_file(filename)`: Deletes a document (automatically triggering the sync engine vector cleanup).
 
 ---

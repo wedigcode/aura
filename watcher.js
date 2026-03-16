@@ -20,6 +20,12 @@ const EMBED_MODEL = process.env.EMBED_MODEL || 'nomic-embed-text:latest';
 const chroma = new ChromaClient({ path: CHROMA_URL });
 const ollama = new Ollama({ host: OLLAMA_HOST });
 
+function getProjectName(filePath) {
+    const relative = path.relative(path.resolve(WATCH_DIR), path.resolve(filePath));
+    const parts = relative.split(path.sep);
+    return parts.length > 1 ? parts[0] : 'root';
+}
+
 // Custom Embedder for ChromaDB using Ollama
 const ollamaEmbedder = {
     generate: async (texts) => {
@@ -91,6 +97,7 @@ async function processFile(filePath) {
             ids.push(`${filePath}-chunk-${i}`);
             metadatas.push({
                 source: filePath,
+                project: getProjectName(filePath),
                 chunk_index: i,
                 timestamp: new Date().toISOString()
             });
