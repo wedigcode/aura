@@ -251,19 +251,34 @@ async function run() {
         const app = express();
         app.use(cors());
         
-        let transport;
+        const transports = new Map();
         
         app.get('/mcp', async (req, res) => {
             console.error('Got SSE connection on /mcp');
-            transport = new SSEServerTransport("/mcp/message", res);
+            
+            // Generate absolute URL for clients that expect it
+            const protocol = req.protocol || 'http';
+            const host = req.get('host') || `localhost:${PORT}`;
+            const absoluteUrl = `${protocol}://${host}/mcp/message`;
+            
+            const transport = new SSEServerTransport(absoluteUrl, res);
+            transports.set(transport.sessionId, transport);
+            
+            transport.onclose = () => {
+                transports.delete(transport.sessionId);
+            };
+            
             await server.connect(transport);
         });
         
         app.post('/mcp/message', async (req, res) => {
+            const sessionId = req.query.sessionId;
+            const transport = transports.get(sessionId);
             if (transport) {
                 await transport.handlePostMessage(req, res);
             } else {
-                res.status(404).send("No active transport");
+                console.error(`Missing or invalid sessionId: ${sessionId}`);
+                res.status(404).send("Session not found");
             }
         });
         
