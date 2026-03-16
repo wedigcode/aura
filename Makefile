@@ -4,10 +4,12 @@ PACKAGE_NAME ?= aura
 
 .PHONY: docker-build
 docker-build:
-	DOCKER_BUILDKIT=1 docker build --platform linux/amd64 -t $(DOCKER_REPOSITORY)/$(PACKAGE_NAME):latest -t $(DOCKER_REPOSITORY)/$(PACKAGE_NAME):$(VERSION) .
-	@echo "Ready to push! Run: make docker-push VERSION=$(VERSION)"
+	# Local builds only map to the machine's architecture for quick testing
+	docker build -t $(DOCKER_REPOSITORY)/$(PACKAGE_NAME):latest -t $(DOCKER_REPOSITORY)/$(PACKAGE_NAME):$(VERSION) .
+	@echo "Ready to push! Run: make docker-publish VERSION=$(VERSION)"
 
-.PHONY: docker-push
-docker-push:
-	docker push $(DOCKER_REPOSITORY)/$(PACKAGE_NAME):latest
-	docker push $(DOCKER_REPOSITORY)/$(PACKAGE_NAME):$(VERSION)
+.PHONY: docker-publish
+docker-publish:
+	# Buildx push automatically compiles for standard servers (amd64) AND Mac/Linux ARM (arm64) natively
+	docker buildx create --use || true
+	docker buildx build --platform linux/amd64,linux/arm64 -t $(DOCKER_REPOSITORY)/$(PACKAGE_NAME):latest -t $(DOCKER_REPOSITORY)/$(PACKAGE_NAME):$(VERSION) --push .
