@@ -1,5 +1,8 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import express from 'express';
+import cors from 'cors';
 import {
     CallToolRequestSchema,
     ListToolsRequestSchema,
@@ -243,9 +246,35 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 async function run() {
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    console.error("Aura MCP server running on stdio");
+    const PORT = process.env.MCP_PORT;
+    if (PORT) {
+        const app = express();
+        app.use(cors());
+        
+        let transport;
+        
+        app.get('/mcp', async (req, res) => {
+            console.error('Got SSE connection on /mcp');
+            transport = new SSEServerTransport("/mcp/message", res);
+            await server.connect(transport);
+        });
+        
+        app.post('/mcp/message', async (req, res) => {
+            if (transport) {
+                await transport.handlePostMessage(req, res);
+            } else {
+                res.status(404).send("No active transport");
+            }
+        });
+        
+        app.listen(PORT, '0.0.0.0', () => {
+            console.error(`Aura MCP SSE Server running on port ${PORT}`);
+        });
+    } else {
+        const transport = new StdioServerTransport();
+        await server.connect(transport);
+        console.error("Aura MCP server running on stdio");
+    }
 }
 
 run().catch((error) => {

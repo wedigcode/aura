@@ -7,4 +7,4 @@ RUN npm install
 
 COPY watcher.js mcp.js ./
 
-CMD ["node", "watcher.js"]
+CMD ["sh", "-c", "node watcher.js & MCP_PORT=8001 node mcp.js"]
