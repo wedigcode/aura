@@ -8,7 +8,9 @@ import { ChromaClient } from 'chromadb';
 import { Ollama } from 'ollama';
 import fs from 'fs-extra';
 import path from 'path';
-import pdfParse from 'pdf-parse';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pdfParse = require('pdf-parse');
 import * as dotenv from 'dotenv';
 
 dotenv.config();
