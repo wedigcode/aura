@@ -53,6 +53,11 @@ async function getCollection() {
 
 // Process and insert a file into Chroma
 async function processFile(filePath) {
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext !== '.txt' && ext !== '.md' && ext !== '.pdf') {
+        return;
+    }
+
     console.log(`[+] Processing file: ${filePath}`);
     try {
         const collection = await getCollection();
@@ -66,10 +71,6 @@ async function processFile(filePath) {
         }
 
         // 2. Read file content
-        const ext = path.extname(filePath).toLowerCase();
-        if (ext !== '.txt' && ext !== '.md' && ext !== '.pdf') {
-            return;
-        }
 
         let content = '';
         if (ext === '.pdf') {
