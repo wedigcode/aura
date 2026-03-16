@@ -6,6 +6,7 @@ documents/
 .aura/
 .DS_Store
 .git/
+.github/
 .gitignore
 *.md
 ask.js
