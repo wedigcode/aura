@@ -16,6 +16,11 @@ const require = createRequire(import.meta.url);
 const pdfParse = require('pdf-parse');
 import * as dotenv from 'dotenv';
 
+// CRITICAL FOR MCP STDIO: Redirect all console logs and warnings to stderr
+// to prevent corrupting the JSON-RPC message stream on stdout
+console.log = function(...args) { console.error(...args); };
+console.warn = function(...args) { console.error(...args); };
+
 dotenv.config();
 
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
@@ -24,7 +29,14 @@ const COLLECTION_NAME = 'aura_docs';
 const EMBED_MODEL = process.env.EMBED_MODEL || 'nomic-embed-text:latest';
 const DOCUMENTS_DIR = process.env.DOCKER_ENV ? path.resolve('./documents') : (process.env.AURA_DIR ? path.resolve(process.env.AURA_DIR) : path.resolve('./documents'));
 
-const chroma = new ChromaClient({ path: CHROMA_URL });
+const chromaUrlObj = new URL(CHROMA_URL);
+const chroma = new ChromaClient({ 
+    path: CHROMA_URL, // Keep for older compatibility
+    // but correctly provide new options to stop warnings
+    host: chromaUrlObj.hostname, 
+    port: chromaUrlObj.port || undefined,
+    ssl: chromaUrlObj.protocol === 'https:'
+});
 const ollama = new Ollama({ host: OLLAMA_HOST });
 
 // Custom Embedder for ChromaDB using Ollama
@@ -32,10 +44,16 @@ const ollamaEmbedder = {
     generate: async (texts) => {
         const embeddings = [];
         for (const text of texts) {
+            if (process.env.AURA_DEBUG_OLLAMA === 'true') {
+                console.error(`[Aura Debug] Generating embedding (model: ${EMBED_MODEL}) for text: ${text.substring(0, 100)}...`);
+            }
             const response = await ollama.embeddings({
                 model: EMBED_MODEL,
                 prompt: text
             });
+            if (process.env.AURA_DEBUG_OLLAMA === 'true') {
+                console.error(`[Aura Debug] Ollama embedding response received.`);
+            }
             embeddings.push(response.embedding);
         }
         return embeddings;
@@ -272,12 +290,13 @@ async function run() {
         });
         
         app.post('/mcp/message', async (req, res) => {
+            console.error(`Received POST ${req.originalUrl}`);
             const sessionId = req.query.sessionId;
             const transport = transports.get(sessionId);
             if (transport) {
                 await transport.handlePostMessage(req, res);
             } else {
-                console.error(`Missing or invalid sessionId: ${sessionId}`);
+                console.error(`Missing or invalid sessionId: ${sessionId} (query: ${JSON.stringify(req.query)})`);
                 res.status(404).send("Session not found");
             }
         });

@@ -22,9 +22,9 @@ Aura operates in two distinct parts:
 #### Recommended Models for RAG
 **Small/Performant LLMs:**
 - `gemma2:9b` (9b)
-- `llama3-chatqa` (8b)
-- `llama3-gradient` (8b)
-- `command-r` (35b)
+- `llama3-chatqa:latest` (8b)
+- `llama3-gradient:latest` (8b)
+- `command-r:latest` (35b)
 
 **Embedding Models:**
 - `qwen3-embedding:8b`
@@ -45,8 +45,9 @@ Ensure your `.env` contains the correct IP address for your Ollama instance and 
 AURA_DIR=./documents
 OLLAMA_HOST=http://your_ollama_ip:11434
 CHROMA_URL=http://localhost:8000
-LLM_MODEL=qwen-coder-next:latest
-EMBED_MODEL=qwen3-embedding:8b
+LLM_MODEL=llama3-chatqa:latest
+EMBED_MODEL=nomic-embed-text:latest
+AURA_DEBUG_OLLAMA=true
 ```
 
 ### 3. Start the Engine
@@ -91,8 +92,8 @@ services:
     environment:
       - CHROMA_URL=http://chromadb:8000
       - OLLAMA_HOST=http://your_ollama_ip:11434    # Replace with your Ollama IP
-      - LLM_MODEL=qwen-coder-next:latest          # Your chosen LLM
-      - EMBED_MODEL=qwen3-embedding:8b            # Your chosen Embedder
+      - LLM_MODEL=llama3-chatqa:latest          # Your chosen LLM
+      - EMBED_MODEL=nomic-embed-text:latest            # Your chosen Embedder
     restart: unless-stopped
 ```
 
@@ -130,14 +131,7 @@ Open your `claude_desktop_config.json` (usually located at `~/Library/Applicatio
         "aura",
         "node",
         "mcp.js"
-      ],
-      "env": {
-        "AURA_DIR": "/absolute/path/to/documents",
-        "OLLAMA_HOST": "http://your_ollama_ip:11434",
-        "CHROMA_URL": "http://chromadb:8000",
-        "LLM_MODEL": "qwen-coder-next:latest",
-        "EMBED_MODEL": "qwen3-embedding:8b"
-      }
+      ]
     }
   }
 }
@@ -158,8 +152,9 @@ If you have Node.js installed locally and prefer to run the script from your hos
         "AURA_DIR": "/absolute/path/to/documents",
         "OLLAMA_HOST": "http://your_ollama_ip:11434",
         "CHROMA_URL": "http://localhost:8000",
-        "LLM_MODEL": "qwen-coder-next:latest",
-        "EMBED_MODEL": "qwen3-embedding:8b"
+        "LLM_MODEL": "llama3-chatqa:latest",
+        "EMBED_MODEL": "nomic-embed-text:latest",
+        "AURA_DEBUG_OLLAMA": "true"
       }
     }
   }

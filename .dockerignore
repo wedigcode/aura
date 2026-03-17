@@ -9,5 +9,4 @@ documents/
 .github/
 .gitignore
 *.md
-ask.js
 docker-compose.yml

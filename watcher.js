@@ -33,10 +33,16 @@ const ollamaEmbedder = {
     generate: async (texts) => {
         const embeddings = [];
         for (const text of texts) {
+            if (process.env.AURA_DEBUG_OLLAMA === 'true') {
+                console.log(`[Aura Debug] Generating embedding (model: ${EMBED_MODEL}) for text: ${text.substring(0, 100)}...`);
+            }
             const response = await ollama.embeddings({
                 model: EMBED_MODEL,
                 prompt: text
             });
+            if (process.env.AURA_DEBUG_OLLAMA === 'true') {
+                console.log(`[Aura Debug] Ollama embedding response received.`);
+            }
             embeddings.push(response.embedding);
         }
         return embeddings;
@@ -58,12 +64,14 @@ async function processFile(filePath) {
         return;
     }
 
-    console.log(`[+] Processing file: ${filePath}`);
+    const displayPath = path.relative(path.resolve(WATCH_DIR), path.resolve(filePath));
+
+    console.log(`[+] Processing file: ${displayPath}`);
     try {
         const collection = await getCollection();
         
         // 1. Delete existing vectors for this specific file path to avoid duplicates
-        console.log(`[ ] Removing old embeddings for ${filePath}...`);
+        console.log(`[ ] Removing old embeddings for ${displayPath}...`);
         try {
             await collection.delete({ where: { "source": filePath } });
         } catch (e) {
@@ -91,7 +99,7 @@ async function processFile(filePath) {
         const chunks = await splitter.createDocuments([content]);
         if (chunks.length === 0) return;
 
-        console.log(`[ ] Generating ${chunks.length} embeddings for ${filePath}...`);
+        console.log(`[ ] Generating ${chunks.length} embeddings for ${displayPath}...`);
         const ids = [];
         const metadatas = [];
         const documents = [];
@@ -114,22 +122,23 @@ async function processFile(filePath) {
             documents: documents
         });
 
-        console.log(`[+] Successfully synched ${filePath} to ChromaDB!`);
+        console.log(`[+] Successfully synched ${displayPath} to ChromaDB!`);
 
     } catch (error) {
-        console.error(`[!] Error processing file ${filePath}:`, error.message || error);
+        console.error(`[!] Error processing file ${displayPath}:`, error.message || error);
     }
 }
 
 // Handle file deletion
 async function removeFile(filePath) {
-    console.log(`[-] File deleted. Removing vectors for: ${filePath}`);
+    const displayPath = path.relative(path.resolve(WATCH_DIR), path.resolve(filePath));
+    console.log(`[-] File deleted. Removing vectors for: ${displayPath}`);
     try {
         const collection = await getCollection();
         await collection.delete({ where: { "source": filePath } });
-        console.log(`[+] Successfully removed ${filePath} from ChromaDB.`);
+        console.log(`[+] Successfully removed ${displayPath} from ChromaDB.`);
     } catch (error) {
-        console.error(`[!] Error removing file ${filePath}:`, error.message || error);
+        console.error(`[!] Error removing file ${displayPath}:`, error.message || error);
     }
 }
 

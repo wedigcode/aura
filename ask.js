@@ -7,8 +7,8 @@ dotenv.config();
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
 const CHROMA_URL = process.env.CHROMA_URL || 'http://localhost:8000';
 const COLLECTION_NAME = 'aura_docs';
-const LLM_MODEL = 'llama3.3:8b';
-const EMBED_MODEL = 'nomic-embed-text';
+const LLM_MODEL = process.env.LLM_MODEL || 'llama3-chatqa:latest';
+const EMBED_MODEL = process.env.EMBED_MODEL || 'nomic-embed-text:latest';
 
 const chroma = new ChromaClient({ path: CHROMA_URL });
 const ollama = new Ollama({ host: OLLAMA_HOST });
@@ -18,10 +18,16 @@ const ollamaEmbedder = {
     generate: async (texts) => {
         const embeddings = [];
         for (const text of texts) {
+            if (process.env.AURA_DEBUG_OLLAMA === 'true') {
+                console.log(`[Aura Debug] Generating embedding (model: ${EMBED_MODEL}) for text: ${text.substring(0, 100)}...`);
+            }
             const response = await ollama.embeddings({
                 model: EMBED_MODEL,
                 prompt: text
             });
+            if (process.env.AURA_DEBUG_OLLAMA === 'true') {
+                console.log(`[Aura Debug] Ollama embedding response received.`);
+            }
             embeddings.push(response.embedding);
         }
         return embeddings;
@@ -69,17 +75,28 @@ ${contextText}`;
 
         console.log(`[Aura]: Generating answer...\n`);
 
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: question }
+        ];
+
+        if (process.env.AURA_DEBUG_OLLAMA === 'true') {
+            console.log(`[Aura Debug] Generating chat completion (model: ${LLM_MODEL})`);
+            console.log(`[Aura Debug] Request Messages:\n${JSON.stringify(messages, null, 2)}`);
+        }
+
         const response = await ollama.chat({
             model: LLM_MODEL,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: question }
-            ],
+            messages: messages,
             stream: true // Stream the response for a better UX
         });
 
         for await (const part of response) {
-            process.stdout.write(part.message.content);
+            if (process.env.AURA_DEBUG_OLLAMA === 'true') {
+                process.stdout.write(`\n[Aura Debug] Stream part: ${JSON.stringify(part)}\n`);
+            } else {
+                process.stdout.write(part.message.content);
+            }
         }
         console.log('\n'); // Append a newline when done
 
